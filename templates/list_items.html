@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4 text-success">Available Unsold Food</h2>
+
+{% if items %}
+<div class="row">
+    {% for item in items %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ item.name }}</h5>
+                <p class="card-text">
+                    <strong>Store:</strong> {{ item.store }}<br>
+                    <strong>Expiry:</strong> {{ item.expiry }}<br>
+                    <strong>Quantity:</strong> {{ item.quantity }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info" role="alert">
+    No items available yet.
+</div>
+{% endif %}
+{% endblock %}

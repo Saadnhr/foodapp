@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Add a Donation</h2>
+<form method="POST" class="card p-4 shadow-sm">
+  {{ form.hidden_tag() }}
+  <div class="mb-3">{{ form.item_name.label }} {{ form.item_name(class="form-control") }}</div>
+  <div class="mb-3">{{ form.expiry_date.label }} {{ form.expiry_date(class="form-control") }}</div>
+  <div class="mb-3">{{ form.quantity.label }} {{ form.quantity(class="form-control") }}</div>
+  {{ form.submit(class="btn btn-success w-100") }}
+</form>
+{% endblock %}

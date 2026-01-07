@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Company Dashboard</h2>
+<p>Welcome, {{ current_user.company_name or current_user.name }}!</p>
+<a href="{{ url_for('add_donation') }}" class="btn btn-success mb-3">+ Add Donation</a>
+
+{% if donations %}
+<div class="row">
+  {% for d in donations %}
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm p-3">
+      <h5>{{ d.item_name }}</h5>
+      <p>Expires: {{ d.expiry_date }}<br>Qty: {{ d.quantity }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">No donations added yet.</div>
+{% endif %}
+{% endblock %}

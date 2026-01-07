@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4 text-success">Add Unsold Food</h2>
+<form method="POST" class="card p-4 shadow-sm">
+    <div class="mb-3">
+        <label class="form-label">Product name</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g. Yogurt" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Store name</label>
+        <input type="text" name="store" class="form-control" placeholder="e.g. Carrefour" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Expiry date</label>
+        <input type="date" name="expiry" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Quantity</label>
+        <input type="number" name="quantity" class="form-control" min="1" required>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100">💾 Save Item</button>
+</form>
+{% endblock %}

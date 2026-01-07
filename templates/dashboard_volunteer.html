@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">Volunteer Dashboard</h2>
+<p>Welcome, {{ current_user.name }}!</p>
+
+<div id="map" style="height: 400px;" class="mb-4"></div>
+
+{% if donations %}
+<div class="row">
+  {% for d in donations %}
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm p-3">
+      <h5>{{ d.item_name }}</h5>
+      <p>From company ID {{ d.company_id }}<br>Expires: {{ d.expiry_date }}<br>Qty: {{ d.quantity }}</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">No available donations nearby.</div>
+{% endif %}
+{% endblock %}
