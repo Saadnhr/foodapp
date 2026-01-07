@@ -1,21 +1,208 @@
 {% extends 'base.html' %}
-{% block content %}
-<h2 class="mb-4">Company Dashboard</h2>
-<p>Welcome, {{ current_user.company_name or current_user.name }}!</p>
-<a href="{{ url_for('add_donation') }}" class="btn btn-success mb-3">+ Add Donation</a>
 
-{% if donations %}
-<div class="row">
-  {% for d in donations %}
-  <div class="col-md-4 mb-3">
-    <div class="card shadow-sm p-3">
-      <h5>{{ d.item_name }}</h5>
-      <p>Expires: {{ d.expiry_date }}<br>Qty: {{ d.quantity }}</p>
+{% block title %}Company Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-success">
+            <i class="bi bi-speedometer2"></i> Company Dashboard
+        </h2>
+        <p class="text-muted">Welcome back, {{ current_user.display_name }}!</p>
     </div>
-  </div>
-  {% endfor %}
 </div>
-{% else %}
-<div class="alert alert-info">No donations added yet.</div>
-{% endif %}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-success shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-basket3 text-success fs-1"></i>
+                <h3 class="mt-2">{{ stats.total }}</h3>
+                <p class="text-muted mb-0">Total Donations</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-primary fs-1"></i>
+                <h3 class="mt-2">{{ stats.available }}</h3>
+                <p class="text-muted mb-0">Available</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-warning shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-hand-thumbs-up text-warning fs-1"></i>
+                <h3 class="mt-2">{{ stats.claimed }}</h3>
+                <p class="text-muted mb-0">Claimed</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card border-success shadow-sm">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                <h3 class="mt-2">{{ stats.completed }}</h3>
+                <p class="text-muted mb-0">Completed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Button -->
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{{ url_for('add_donation') }}" class="btn btn-success btn-lg">
+            <i class="bi bi-plus-circle"></i> Add New Donation
+        </a>
+    </div>
+</div>
+
+<!-- Donations List -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-list-ul"></i> Your Donations</h5>
+    </div>
+    <div class="card-body">
+        {% if donations %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for donation in donations %}
+                        <tr>
+                            <td>
+                                <strong>{{ donation.item_name }}</strong>
+                                {% if donation.description %}
+                                <br><small class="text-muted">{{ donation.description[:50] }}{% if donation.description|length > 50 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ donation.category|capitalize }}</span>
+                            </td>
+                            <td>{{ donation.quantity }}</td>
+                            <td>
+                                {{ donation.expiry_date.strftime('%Y-%m-%d') }}
+                                {% set days = days_until_expiry(donation.expiry_date) %}
+                                {% if days is not none %}
+                                    {% if days < 0 %}
+                                        <br><span class="badge bg-danger">Expired</span>
+                                    {% elif days == 0 %}
+                                        <br><span class="badge bg-danger">Today</span>
+                                    {% elif days == 1 %}
+                                        <br><span class="badge bg-warning">Tomorrow</span>
+                                    {% elif days <= 3 %}
+                                        <br><span class="badge bg-warning">{{ days }} days</span>
+                                    {% elif days <= 7 %}
+                                        <br><span class="badge bg-info">{{ days }} days</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if donation.status == 'available' %}
+                                    <span class="badge bg-primary">Available</span>
+                                {% elif donation.status == 'claimed' %}
+                                    <span class="badge bg-warning">Claimed</span>
+                                {% elif donation.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif donation.status == 'expired' %}
+                                    <span class="badge bg-danger">Expired</span>
+                                {% endif %}
+                            </td>
+                            <td><small>{{ donation.created_at.strftime('%Y-%m-%d') }}</small></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if donation.status == 'claimed' %}
+                                        <button class="btn btn-success btn-sm" onclick="completeDonation({{ donation.id }})">
+                                            <i class="bi bi-check-lg"></i> Complete
+                                        </button>
+                                    {% endif %}
+                                    {% if donation.status == 'available' %}
+                                        <button class="btn btn-danger btn-sm" onclick="deleteDonation({{ donation.id }})">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No donations yet</h4>
+                <p class="text-muted">Start by adding your first food donation</p>
+                <a href="{{ url_for('add_donation') }}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Add Donation
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function completeDonation(donationId) {
+    if (confirm('Mark this donation as completed?')) {
+        fetch(`/donation/${donationId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+
+function deleteDonation(donationId) {
+    if (confirm('Are you sure you want to delete this donation?')) {
+        fetch(`/donation/${donationId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+</script>
 {% endblock %}

@@ -1,16 +1,152 @@
 {% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
 {% block content %}
-<h2 class="mb-4">Register</h2>
-<form method="POST" class="card p-4 shadow-sm">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.role.label }} {{ form.role(class="form-select") }}</div>
-    <div class="mb-3">{{ form.name.label }} {{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.surname.label }} {{ form.surname(class="form-control") }}</div>
-    <div class="mb-3">{{ form.company_name.label }} {{ form.company_name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.registration_number.label }} {{ form.registration_number(class="form-control") }}</div>
-    <div class="mb-3">{{ form.email.label }} {{ form.email(class="form-control") }}</div>
-    <div class="mb-3">{{ form.phone.label }} {{ form.phone(class="form-control") }}</div>
-    <div class="mb-3">{{ form.password.label }} {{ form.password(class="form-control") }}</div>
-    {{ form.submit(class="btn btn-success w-100") }}
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4 text-success">
+                    <i class="bi bi-person-plus-fill"></i> Create Account
+                </h2>
+                
+                <form method="POST" id="registerForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        {{ form.role.label(class="form-label fw-bold") }}
+                        {{ form.role(class="form-select form-select-lg", id="roleSelect") }}
+                        {% if form.role.errors %}
+                            <div class="text-danger small">{{ form.role.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Personal Information -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control", placeholder="John") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.surname.label(class="form-label") }}
+                            {{ form.surname(class="form-control", placeholder="Doe") }}
+                            {% if form.surname.errors %}
+                                <div class="text-danger small">{{ form.surname.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Company Fields (conditional) -->
+                    <div id="companyFields" style="display: none;">
+                        <div class="mb-3">
+                            {{ form.company_name.label(class="form-label") }}
+                            {{ form.company_name(class="form-control", placeholder="Acme Foods Ltd.") }}
+                            {% if form.company_name.errors %}
+                                <div class="text-danger small">{{ form.company_name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.registration_number.label(class="form-label") }}
+                            {{ form.registration_number(class="form-control", placeholder="123456789") }}
+                            {% if form.registration_number.errors %}
+                                <div class="text-danger small">{{ form.registration_number.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Information -->
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            {{ form.email(class="form-control", placeholder="email@example.com") }}
+                        </div>
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.phone.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                            {{ form.phone(class="form-control", placeholder="+33 1 23 45 67 89") }}
+                        </div>
+                        {% if form.phone.errors %}
+                            <div class="text-danger small">{{ form.phone.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            {{ form.password(class="form-control", placeholder="••••••••") }}
+                        </div>
+                        <div class="form-text">Minimum 8 characters</div>
+                        {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.confirm_password.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            {{ form.confirm_password(class="form-control", placeholder="••••••••") }}
+                        </div>
+                        {% if form.confirm_password.errors %}
+                            <div class="text-danger small">{{ form.confirm_password.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    {{ form.submit(class="btn btn-success w-100 py-2") }}
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center text-muted mb-0">
+                    Already have an account? 
+                    <a href="{{ url_for('login') }}" class="text-success text-decoration-none fw-bold">
+                        Login here
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Show/hide company fields based on role selection
+document.getElementById('roleSelect').addEventListener('change', function() {
+    const companyFields = document.getElementById('companyFields');
+    if (this.value === 'company') {
+        companyFields.style.display = 'block';
+    } else {
+        companyFields.style.display = 'none';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('roleSelect');
+    const companyFields = document.getElementById('companyFields');
+    if (roleSelect.value === 'company') {
+        companyFields.style.display = 'block';
+    }
+});
+</script>
 {% endblock %}

@@ -1,22 +1,303 @@
 {% extends 'base.html' %}
+
+{% block title %}Volunteer Dashboard{% endblock %}
+
 {% block content %}
-<h2 class="mb-4">Volunteer Dashboard</h2>
-<p>Welcome, {{ current_user.name }}!</p>
-
-<div id="map" style="height: 400px;" class="mb-4"></div>
-
-{% if donations %}
-<div class="row">
-  {% for d in donations %}
-  <div class="col-md-4 mb-3">
-    <div class="card shadow-sm p-3">
-      <h5>{{ d.item_name }}</h5>
-      <p>From company ID {{ d.company_id }}<br>Expires: {{ d.expiry_date }}<br>Qty: {{ d.quantity }}</p>
+<!-- Welcome Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-success">
+            <i class="bi bi-speedometer2"></i> Volunteer Dashboard
+        </h2>
+        <p class="text-muted">Welcome, {{ current_user.name }}!</p>
     </div>
-  </div>
-  {% endfor %}
 </div>
-{% else %}
-<div class="alert alert-info">No available donations nearby.</div>
+
+<!-- Location Setup Alert -->
+{% if not current_user.latitude or not current_user.longitude %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Set your location!</strong> Enable location to see donations sorted by distance.
+    <button type="button" class="btn btn-sm btn-warning ms-3" onclick="getLocation()">
+        <i class="bi bi-geo-alt"></i> Enable Location
+    </button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
 {% endif %}
+
+<!-- Map -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-map"></i> Nearby Donations</h5>
+    </div>
+    <div class="card-body p-0">
+        <div id="map" style="height: 400px;"></div>
+    </div>
+</div>
+
+<!-- My Claims Section -->
+{% if my_claims %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-hand-thumbs-up"></i> My Claimed Donations</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for donation in my_claims %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100 border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ donation.item_name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="bi bi-building"></i> Company ID: {{ donation.company_id }}<br>
+                                <i class="bi bi-calendar-event"></i> Expires: {{ donation.expiry_date.strftime('%Y-%m-%d') }}<br>
+                                <i class="bi bi-box-seam"></i> Quantity: {{ donation.quantity }}
+                            </small>
+                        </p>
+                        {% set days = days_until_expiry(donation.expiry_date) %}
+                        {% if days is not none and days <= 2 %}
+                            <div class="alert alert-danger py-1 px-2 small mb-2">
+                                <i class="bi bi-exclamation-triangle"></i> 
+                                {% if days == 0 %}Expires today!
+                                {% elif days == 1 %}Expires tomorrow!
+                                {% else %}Expires in {{ days }} days{% endif %}
+                            </div>
+                        {% endif %}
+                        <span class="badge bg-{{ donation.status == 'claimed' and 'warning' or 'success' }}">
+                            {{ donation.status|capitalize }}
+                        </span>
+                        {% if donation.status == 'claimed' %}
+                            <button class="btn btn-sm btn-success mt-2 w-100" onclick="completeDonation({{ donation.id }})">
+                                <i class="bi bi-check-circle"></i> Mark as Picked Up
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Available Donations -->
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-basket3"></i> Available Donations</h5>
+    </div>
+    <div class="card-body">
+        {% if donations %}
+            <div class="row">
+                {% for donation in donations %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">{{ donation.item_name }}</h5>
+                                <span class="badge bg-secondary">{{ donation.category|capitalize }}</span>
+                            </div>
+                            
+                            {% if donation.description %}
+                            <p class="card-text small text-muted">{{ donation.description }}</p>
+                            {% endif %}
+                            
+                            <ul class="list-unstyled small">
+                                <li><i class="bi bi-building text-muted"></i> Company ID: {{ donation.company_id }}</li>
+                                <li><i class="bi bi-calendar-event text-muted"></i> Expires: {{ donation.expiry_date.strftime('%Y-%m-%d') }}</li>
+                                <li><i class="bi bi-box-seam text-muted"></i> Quantity: {{ donation.quantity }}</li>
+                                {% if hasattr(donation, 'distance') and donation.distance %}
+                                    <li><i class="bi bi-geo-alt text-muted"></i> {{ "%.1f"|format(donation.distance) }} km away</li>
+                                {% endif %}
+                            </ul>
+                            
+                            {% set days = days_until_expiry(donation.expiry_date) %}
+                            {% if days is not none %}
+                                {% if days <= 0 %}
+                                    <div class="alert alert-danger py-1 px-2 small">
+                                        <i class="bi bi-exclamation-triangle"></i> Expired
+                                    </div>
+                                {% elif days <= 1 %}
+                                    <div class="alert alert-danger py-1 px-2 small">
+                                        <i class="bi bi-exclamation-circle"></i> Expires {{ days == 0 and 'today' or 'tomorrow' }}!
+                                    </div>
+                                {% elif days <= 3 %}
+                                    <div class="alert alert-warning py-1 px-2 small">
+                                        <i class="bi bi-clock"></i> {{ days }} days left
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            <button class="btn btn-success w-100 mt-2" onclick="claimDonation({{ donation.id }})">
+                                <i class="bi bi-hand-thumbs-up"></i> Claim This Donation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+                <h4 class="text-muted mt-3">No available donations nearby</h4>
+                <p class="text-muted">Check back later for new food donations in your area</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Initialize map
+let map;
+let userMarker;
+
+function initMap() {
+    // Default to Paris coordinates
+    const defaultLat = {{ current_user.latitude or 48.8566 }};
+    const defaultLng = {{ current_user.longitude or 2.3522 }};
+    
+    map = L.map('map').setView([defaultLat, defaultLng], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Add user marker if location is set
+    {% if current_user.latitude and current_user.longitude %}
+    userMarker = L.marker([{{ current_user.latitude }}, {{ current_user.longitude }}], {
+        icon: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        })
+    }).addTo(map);
+    userMarker.bindPopup('<b>Your Location</b>').openPopup();
+    {% endif %}
+    
+    // Add donation markers
+    {% for donation in donations %}
+        {% if donation.latitude and donation.longitude %}
+        const marker{{ donation.id }} = L.marker([{{ donation.latitude }}, {{ donation.longitude }}], {
+            icon: L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            })
+        }).addTo(map);
+        
+        marker{{ donation.id }}.bindPopup(`
+            <b>{{ donation.item_name }}</b><br>
+            Quantity: {{ donation.quantity }}<br>
+            Expires: {{ donation.expiry_date.strftime('%Y-%m-%d') }}
+            {% if hasattr(donation, 'distance') and donation.distance %}
+            <br>Distance: {{ "%.1f"|format(donation.distance) }} km
+            {% endif %}
+        `);
+        {% endif %}
+    {% endfor %}
+}
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(saveLocation, showError);
+    } else {
+        alert('Geolocation is not supported by this browser.');
+    }
+}
+
+function saveLocation(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    
+    fetch('/user/location', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lat: lat, lng: lng })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function showError(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            alert('Location permission denied. Please enable location access in your browser settings.');
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert('Location information is unavailable.');
+            break;
+        case error.TIMEOUT:
+            alert('Location request timed out.');
+            break;
+        default:
+            alert('An unknown error occurred.');
+    }
+}
+
+function claimDonation(donationId) {
+    if (confirm('Claim this donation? Please make sure you can pick it up before expiry.')) {
+        fetch(`/donation/${donationId}/claim`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+
+function completeDonation(donationId) {
+    if (confirm('Mark this donation as picked up?')) {
+        fetch(`/donation/${donationId}/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+
+// Initialize map on page load
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
 {% endblock %}

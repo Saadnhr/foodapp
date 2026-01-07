@@ -1,11 +1,156 @@
 {% extends 'base.html' %}
+
+{% block title %}Add Donation{% endblock %}
+
 {% block content %}
-<h2 class="mb-4">Add a Donation</h2>
-<form method="POST" class="card p-4 shadow-sm">
-  {{ form.hidden_tag() }}
-  <div class="mb-3">{{ form.item_name.label }} {{ form.item_name(class="form-control") }}</div>
-  <div class="mb-3">{{ form.expiry_date.label }} {{ form.expiry_date(class="form-control") }}</div>
-  <div class="mb-3">{{ form.quantity.label }} {{ form.quantity(class="form-control") }}</div>
-  {{ form.submit(class="btn btn-success w-100") }}
-</form>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-plus-circle"></i> Add New Donation
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {% if not current_user.latitude or not current_user.longitude %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Location not set!</strong> Please enable location services to help volunteers find your donations.
+                    <button type="button" class="btn btn-sm btn-warning ms-2" onclick="getLocation()">
+                        <i class="bi bi-geo-alt"></i> Enable Location
+                    </button>
+                </div>
+                {% endif %}
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Item Name -->
+                    <div class="mb-3">
+                        {{ form.item_name.label(class="form-label fw-bold") }}
+                        {{ form.item_name(class="form-control form-control-lg") }}
+                        {% if form.item_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.item_name.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Category -->
+                    <div class="mb-3">
+                        {{ form.category.label(class="form-label fw-bold") }}
+                        {{ form.category(class="form-select form-select-lg") }}
+                        {% if form.category.errors %}
+                            <div class="text-danger small mt-1">{{ form.category.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label fw-bold") }}
+                        {{ form.description(class="form-control") }}
+                        <div class="form-text">Optional: Add details like packaging, brand, or special notes</div>
+                        {% if form.description.errors %}
+                            <div class="text-danger small mt-1">{{ form.description.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Expiry Date and Quantity Row -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.expiry_date.label(class="form-label fw-bold") }}
+                            {{ form.expiry_date(class="form-control form-control-lg", min=today) }}
+                            <div class="form-text">Date when the item expires</div>
+                            {% if form.expiry_date.errors %}
+                                <div class="text-danger small mt-1">{{ form.expiry_date.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.quantity.label(class="form-label fw-bold") }}
+                            <div class="input-group input-group-lg">
+                                {{ form.quantity(class="form-control", min="1") }}
+                                <span class="input-group-text">items</span>
+                            </div>
+                            <div class="form-text">Number of items available</div>
+                            {% if form.quantity.errors %}
+                                <div class="text-danger small mt-1">{{ form.quantity.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Submit Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="{{ url_for('dashboard_company') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        {{ form.submit(class="btn btn-success btn-lg px-5") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card mt-3 bg-light">
+            <div class="card-body">
+                <h6 class="text-success"><i class="bi bi-lightbulb"></i> Tips for Adding Donations</h6>
+                <ul class="mb-0 small">
+                    <li>Be specific with item names (e.g., "Fresh Tomatoes" instead of "Vegetables")</li>
+                    <li>Select the most accurate category to help volunteers find items</li>
+                    <li>Include details about packaging or quantity in the description</li>
+                    <li>Set realistic expiry dates to ensure food quality</li>
+                    <li>Make sure your location is set so volunteers can find you</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const expiryInput = document.querySelector('input[name="expiry_date"]');
+    if (expiryInput) {
+        expiryInput.setAttribute('min', today);
+    }
+});
+
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(saveLocation, showError);
+    } else {
+        alert('Geolocation is not supported by this browser.');
+    }
+}
+
+function saveLocation(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    
+    fetch('/user/location', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ lat: lat, lng: lng })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save location');
+    });
+}
+
+function showError(error) {
+    alert('Unable to get location. Please check your browser permissions.');
+}
+</script>
 {% endblock %}

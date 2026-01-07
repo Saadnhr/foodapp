@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="text-center mb-5">
+            <h1 class="display-4 text-success fw-bold mb-3">
+                <i class="bi bi-basket3-fill"></i> About Food Rescue
+            </h1>
+            <p class="lead text-muted">Our mission to reduce food waste and support communities</p>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-5">
+                <h2 class="text-success mb-4">Our Mission</h2>
+                <p class="lead">
+                    Food Rescue connects food companies and stores with volunteers to redistribute 
+                    surplus food that would otherwise go to waste.
+                </p>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-success">
+            <div class="card-body p-5 text-center">
+                <h3 class="text-success mb-3">Join the Movement</h3>
+                <p class="mb-4">Whether you're a business with surplus food or a volunteer ready to help, we need you!</p>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('register') }}" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-person-plus"></i> Get Started Today
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
